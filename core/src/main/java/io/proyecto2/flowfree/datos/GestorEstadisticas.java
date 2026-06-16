@@ -8,6 +8,7 @@ import io.proyecto2.flowfree.usuario.Estadisticas;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GestorEstadisticas {
 
@@ -16,13 +17,15 @@ public class GestorEstadisticas {
     private final Usuario  usuario;
     private final Estadisticas stats;
     private final HistorialPartidas historial;
+    private final Object lockDatos = new Object();
+    private final AtomicBoolean detenido = new AtomicBoolean(false);
     private final ExecutorService escritor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "StatsWriter");
             t.setDaemon(true);
             return t;
         });
     
-    private Runnable onGuardadoCompleto;
+    private volatile Runnable onGuardadoCompleto;
     
     private GestorEstadisticas(Usuario usuario) {
         this.usuario = usuario;
@@ -41,36 +44,45 @@ public class GestorEstadisticas {
     }
     
     public void registrarNivelCompletado(int nivel, long tiempoMs, int puntuacion, int fallos) {
+        if (detenido.get()) return;
         
-        stats.registrarNivelCompletado(nivel, tiempoMs, puntuacion);
-        
-        RegistroPartida registro = new RegistroPartida(nivel, puntuacion, tiempoMs, fallos, true);
-        historial.agregar(registro);
+        synchronized (lockDatos) {
+            stats.registrarNivelCompletado(nivel, tiempoMs, puntuacion);
+            RegistroPartida registro = new RegistroPartida(nivel, puntuacion, tiempoMs, fallos, true);
+            historial.agregar(registro);
+        }
         
         guardarEnDisco(puntuacion);
     }
     
     public void registrarFallo() {
-        stats.registrarFallo();
+        synchronized (lockDatos) {
+            stats.registrarFallo();
+        }
     }
 
     public void registrarPartidaIniciada() {
-        stats.registrarPartidaIniciada();
+        synchronized (lockDatos) {
+            stats.registrarPartidaIniciada();
+        }
     }
     
     private void guardarEnDisco(int nuevaPuntuacion) {
+        if (detenido.get()) return;
         String nombreUsuario = usuario.getNombreUsuario();
         
         escritor.submit(() -> {
             try {
-                ArchivoEstadisticas.guardar(nombreUsuario, stats);
-                ArchivoHistorial.guardar(nombreUsuario, historial);
-                GestorRanking.actualizarPuntuacion(
-                    nombreUsuario,
-                    nuevaPuntuacion,
-                    usuario.getNivelActual(),
-                    stats.getTiempoTotalMs()
-                );
+                synchronized (lockDatos) {
+                    ArchivoEstadisticas.guardar(nombreUsuario, stats);
+                    ArchivoHistorial.guardar(nombreUsuario, historial);
+                    GestorRanking.actualizarPuntuacion(
+                        nombreUsuario,
+                        nuevaPuntuacion,
+                        usuario.getNivelActual(),
+                        stats.getTiempoTotalMs()
+                    );
+                }
                 
                 Gdx.app.log("GestorEstadisticas",
                     "Stats guardadas para: " + nombreUsuario);
@@ -90,9 +102,12 @@ public class GestorEstadisticas {
     public HistorialPartidas getHistorial() { return historial; }
     
     public void detener() {
+        if (!detenido.compareAndSet(false, true)) return;
         escritor.shutdown();
         try {
-            escritor.awaitTermination(3, TimeUnit.SECONDS);
+            if (!escritor.awaitTermination(3, TimeUnit.SECONDS)) {
+                escritor.shutdownNow();
+            }
         } catch (InterruptedException e) {
             escritor.shutdownNow();
             Thread.currentThread().interrupt();

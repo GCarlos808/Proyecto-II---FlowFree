@@ -7,12 +7,14 @@ import io.proyecto2.flowfree.constantes.Constantes;
 import io.proyecto2.flowfree.datos.ArchivoUsuario;
 import java.io.IOException;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AutosaveThread {
 
     private final ScheduledExecutorService executor;
     private final Usuario usuario;
-    private volatile boolean guardandoAhora = false;
+    private final AtomicBoolean guardandoAhora = new AtomicBoolean(false);
+    private final AtomicBoolean detenido = new AtomicBoolean(false);
     
     public AutosaveThread(Usuario usuario) {
         this.usuario  = usuario;
@@ -25,6 +27,7 @@ public class AutosaveThread {
     }
     
     public void iniciar() {
+        if (detenido.get()) return;
         executor.scheduleAtFixedRate(
             this::guardarEnSegundo,
             Constantes.AUTOSAVE_INTERVALO,
@@ -35,8 +38,8 @@ public class AutosaveThread {
     }
     
     private void guardarEnSegundo() {
-        if (guardandoAhora) return;
-        guardandoAhora = true;
+        if (detenido.get()) return;
+        if (!guardandoAhora.compareAndSet(false, true)) return;
         
         try {
             ArchivoUsuario.guardar(usuario);
@@ -47,16 +50,17 @@ public class AutosaveThread {
             Gdx.app.error("AutosaveThread",
                 "Error en autosave: " + e.getMessage());
         } finally {
-            guardandoAhora = false;
+            guardandoAhora.set(false);
         }
     }
     
     public void guardarAhora() {
+        if (detenido.get()) return;
         executor.submit(this::guardarEnSegundo);
     }
     
     public void detener() {
-        
+        if (!detenido.compareAndSet(false, true)) return;
         executor.shutdown();
         try {
             

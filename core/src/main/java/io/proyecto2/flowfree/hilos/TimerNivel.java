@@ -9,6 +9,7 @@ public class TimerNivel extends Thread {
     private volatile int     tiempoRestante;
     private volatile boolean pausado = false;
     private final AtomicBoolean corriendo = new AtomicBoolean(false);
+    private final Object lockPausa = new Object();
     
     private final Runnable onTiempoAgotado;
     
@@ -24,11 +25,14 @@ public class TimerNivel extends Thread {
         corriendo.set(true);
         while (corriendo.get() && tiempoRestante > 0) {
             
-            while (pausado && corriendo.get()) {
-                try { Thread.sleep(50); }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
+            synchronized (lockPausa) {
+                while (pausado && corriendo.get()) {
+                    try {
+                        lockPausa.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 }
             }
             
@@ -49,13 +53,23 @@ public class TimerNivel extends Thread {
         }
     }
     
-    public void pausar()   { pausado = true; }
-    public void reanudar() { pausado = false; }
+    public void pausar() {
+        pausado = true;
+    }
+
+    public void reanudar() {
+        pausado = false;
+        synchronized (lockPausa) {
+            lockPausa.notifyAll();
+        }
+    }
+
     public void detener() {
         corriendo.set(false);
+        reanudar();
         interrupt();
     }
     
     public int getTiempoRestante() { return tiempoRestante; }
-    public boolean estaCorreindo() { return corriendo.get(); }
+    public boolean estaCorriendo() { return corriendo.get(); }
 }

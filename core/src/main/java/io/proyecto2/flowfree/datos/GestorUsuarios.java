@@ -6,11 +6,20 @@ import io.proyecto2.flowfree.usuario.Usuario;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class GestorUsuarios {
 
     private static GestorUsuarios instancia;
+    private final Object lockSesion = new Object();
+    private final ExecutorService escritor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "GuardadoUsuario");
+        t.setDaemon(true);
+        return t;
+    });
     private Usuario usuarioActivo;
     
     private GestorUsuarios() {}
@@ -42,7 +51,9 @@ public class GestorUsuarios {
         
         GestorRanking.actualizarPuntuacion(nombreUsuario, 0, 1, 0L);
 
-        usuarioActivo = nuevo;
+        synchronized (lockSesion) {
+            usuarioActivo = nuevo;
+        }
         return nuevo;
     }
     
@@ -56,7 +67,9 @@ public class GestorUsuarios {
         }
         
         usuario.actualizarUltimaSesion();
-        usuarioActivo = usuario;
+        synchronized (lockSesion) {
+            usuarioActivo = usuario;
+        }
         
         guardarEnHiloSecundario(usuario);
         
@@ -64,28 +77,38 @@ public class GestorUsuarios {
     }
     
     public void guardarProgreso() {
-        if (usuarioActivo != null) guardarEnHiloSecundario(usuarioActivo);
+        Usuario local;
+        synchronized (lockSesion) {
+            local = usuarioActivo;
+        }
+        if (local != null) guardarEnHiloSecundario(local);
     }
 
     public void guardarProgresoAhora() throws IOException {
-        if (usuarioActivo != null) {
-            ArchivoUsuario.guardar(usuarioActivo);
+        Usuario local;
+        synchronized (lockSesion) {
+            local = usuarioActivo;
+        }
+        if (local != null) {
+            ArchivoUsuario.guardar(local);
         }
     }
     
     private void guardarEnHiloSecundario(Usuario usuario) {
-        new Thread(() -> {
+        escritor.submit(() -> {
             try {
                 ArchivoUsuario.guardar(usuario);
             } catch (IOException e) {
                 System.err.println("Error guardando usuario: " + e.getMessage());
             }
-        }, "GuardadoUsuario-" + usuario.getNombreUsuario()).start();
+        });
     }
     
     public void cerrarSesion() {
         guardarProgreso();
-        usuarioActivo = null;
+        synchronized (lockSesion) {
+            usuarioActivo = null;
+        }
     }
     
     public List<String> getRequisitosContraseña(String contraseña) {
@@ -112,5 +135,21 @@ public class GestorUsuarios {
             throw new ContraseñaInvalidaException(String.join(", ", fallos));
     }
     
-    public Usuario getUsuarioActivo() { return usuarioActivo; }
+    public void detener() {
+        escritor.shutdown();
+        try {
+            if (!escritor.awaitTermination(3, TimeUnit.SECONDS)) {
+                escritor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            escritor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    public Usuario getUsuarioActivo() {
+        synchronized (lockSesion) {
+            return usuarioActivo;
+        }
+    }
 }
