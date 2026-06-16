@@ -69,7 +69,8 @@ public class Flujo {
     }
     
     public ColorFlow getColor() { return color; }
-    public int getLongitud()     { return longitud; }
+    public int getLongitud() { return longitud; }
+    public Celda getCeldaCola() { return cola != null ? cola.celda : origen; }
     
     private static class NodoCelda {
         Celda celda;

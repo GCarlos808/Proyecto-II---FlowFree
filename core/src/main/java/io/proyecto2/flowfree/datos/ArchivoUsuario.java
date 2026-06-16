@@ -41,8 +41,8 @@ public final class ArchivoUsuario {
         
         try (DataInputStream in = new DataInputStream(
                 new BufferedInputStream(
-                    new FileInputStream(ruta.toFile())))) {Usuario usuario = new Usuario();
-                    
+                    new FileInputStream(ruta.toFile())))) {
+            Usuario usuario = Usuario.crearParaCarga();
             usuario.cargar(in);
             return usuario;
             

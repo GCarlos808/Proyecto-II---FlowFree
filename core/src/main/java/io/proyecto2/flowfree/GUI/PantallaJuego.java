@@ -250,5 +250,4 @@ public class PantallaJuego implements Screen {
     @Override public void pause() { if (!pausado) { juego.pausar(); pausado = true;  } }
     @Override public void resume() { if (pausado)  { juego.reanudar(); pausado = false; } }
     @Override public void hide() { Gdx.input.setInputProcessor(null); }
-    @Override public void show() {}
 }

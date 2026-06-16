@@ -81,7 +81,7 @@ public class Main extends Game {
         p.borderWidth = 1f;
         p.borderColor = new Color(0f, 0f, 0f, 0.5f);
         
-        p.characters  = FreeTypeFontParameter.DEFAULT_CHARS + "áéíóúÁÉÍÓÚñÑüÜ¿¡";
+        p.characters = FreeTypeFontGenerator.DEFAULT_CHARS + "áéíóúÁÉÍÓÚñÑüÜ¿¡";
         p.magFilter   = Texture.TextureFilter.Linear;
         p.minFilter   = Texture.TextureFilter.Linear;
         return gen.generateFont(p);

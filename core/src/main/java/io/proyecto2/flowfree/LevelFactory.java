@@ -12,7 +12,7 @@ public final class LevelFactory {
             case 3 -> nivel3();
             case 4 -> nivel4();
             case 5 -> nivel5();
-            default -> throw new constantes.NivelInvalidoException(
+            default -> throw new NivelInvalidoException(
                 "Nivel " + numero + " no existe. Rango: 1–5");
         };
     }

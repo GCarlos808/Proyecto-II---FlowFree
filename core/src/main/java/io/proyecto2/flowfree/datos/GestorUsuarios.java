@@ -90,6 +90,11 @@ public class GestorUsuarios {
             fallos.add("Al menos un símbolo (!@#$%^&*)");
         return fallos;
     }
+
+    /** Alias sin tilde para compatibilidad con pantallas existentes. */
+    public List<String> getRequisitosContrasena(String contraseña) {
+        return getRequisitosContraseña(contraseña);
+    }
     
     private void validarContrasena(String c) throws ContraseñaInvalidaException {
         List<String> fallos = getRequisitosContraseña(c);

@@ -24,6 +24,7 @@ public class NivelFlowFree implements Nivelable, Serializable {
     @Override public boolean esCompleto() { return false; }
     @Override public int getNumeroPasos() { return 0; }
 
+    public int getNumero() { return numero; }
     public int getTamano() { return tamaño; }
     public int[][] getPuntosIniciales() { return puntos; }
     public int getTiempoLimite() { return tiempoLimite; }

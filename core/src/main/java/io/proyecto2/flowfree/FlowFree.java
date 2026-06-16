@@ -47,11 +47,11 @@ public class FlowFree extends Juego implements Nivelable {
     
     @Override
     protected void iniciarNivel(int numeroNivel) {
-        if (numeroNivel > usuarioActivo.getNivelActual() + 1) {
+        if (numeroNivel > usuarioActivo.getNivelActual()) {
             throw new NivelBloqueadoException("Nivel " + numeroNivel + " bloqueado. Debes completar el anterior.");
         }
-        
-        NivelFlowFree nivel = FabricaNiveles.crear(numeroNivel);
+
+        NivelFlowFree nivel = LevelFactory.crear(numeroNivel);
         cargarNivel(nivel);
     }
     
@@ -69,7 +69,7 @@ public class FlowFree extends Juego implements Nivelable {
     
     @Override
     protected void aplicarDerrota() {
-        
+        usuarioActivo.setVidasRestantes(0);
     }
 
     @Override
@@ -121,21 +121,26 @@ public class FlowFree extends Juego implements Nivelable {
         if (!esCeldaValida(fila, col)) return;
 
         Celda celda = grid[fila][col];
-        
+        Celda cola = flujoActivo.getCeldaCola();
+
+        if (!esAdyacente(cola, celda)) return;
+
         if (celda.isEsPuntoFijo() && celda.getColor() != flujoActivo.getColor()) return;
-        
+
         if (flujoActivo.contiene(celda)) {
             int celdas = flujoActivo.retrocederHasta(celda);
             celdaOcupadas -= celdas;
             return;
         }
-        
+
         if (celda.getColor() != ColorFlow.VACIO) {
             Flujo otro = encontrarFlujo(celda.getColor());
-            int liberadas = otro.limpiar();
-            celdaOcupadas -= liberadas;
+            if (otro != null) {
+                int liberadas = otro.limpiar();
+                celdaOcupadas -= liberadas;
+            }
         }
-        
+
         if (flujoActivo.avanzar(celda)) {
             celda.setColor(flujoActivo.getColor());
             celdaOcupadas++;
@@ -186,7 +191,46 @@ public class FlowFree extends Juego implements Nivelable {
     }
     
     private void reconstruirFlujos() {
-        
+        int[][] puntos = nivelCargado.getPuntosIniciales();
+        flujos = new Flujo[puntos.length / 2];
+        celdaOcupadas = 0;
+
+        for (int i = 0; i < flujos.length; i++) {
+            ColorFlow color = ColorFlow.values()[i];
+            Celda origen = grid[puntos[i * 2][0]][puntos[i * 2][1]];
+            Celda destino = grid[puntos[i * 2 + 1][0]][puntos[i * 2 + 1][1]];
+            flujos[i] = new Flujo(color, origen, destino);
+
+            for (int f = 0; f < tamañoCuadricula; f++) {
+                for (int c = 0; c < tamañoCuadricula; c++) {
+                    Celda celda = grid[f][c];
+                    if (celda.getColor() == color && !flujos[i].contiene(celda)) {
+                        flujos[i].avanzar(celda);
+                    }
+                }
+            }
+            if (grid[origen.getFila()][origen.getCol()].getColor() == ColorFlow.VACIO) {
+                origen.setColor(color);
+                origen.setEsPuntoFijo(true);
+            }
+            if (grid[destino.getFila()][destino.getCol()].getColor() == ColorFlow.VACIO) {
+                destino.setColor(color);
+                destino.setEsPuntoFijo(true);
+            }
+        }
+
+        celdaOcupadas = 0;
+        for (int f = 0; f < tamañoCuadricula; f++) {
+            for (int c = 0; c < tamañoCuadricula; c++) {
+                if (grid[f][c].getColor() != ColorFlow.VACIO) celdaOcupadas++;
+            }
+        }
+    }
+
+    private boolean esAdyacente(Celda a, Celda b) {
+        int df = Math.abs(a.getFila() - b.getFila());
+        int dc = Math.abs(a.getCol() - b.getCol());
+        return (df + dc) == 1;
     }
     
     public Celda[][] getGrid() { return grid; }
