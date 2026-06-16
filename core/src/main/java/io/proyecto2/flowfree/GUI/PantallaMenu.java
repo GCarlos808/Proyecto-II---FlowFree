@@ -43,7 +43,7 @@ public class PantallaMenu implements Screen {
     private void manejarClic(float x, float y) {
         if (hit(x,y,BTN_X,Y_JUGAR,  BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaMapa(app,usuario)); return; }
         if (hit(x,y,BTN_X,Y_PERFIL, BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaPerfil(app,usuario)); return; }
-        if (hit(x,y,BTN_X,Y_RANKING,BTN_W,BTN_H)) { Gdx.app.log("Menu","Ranking — pendiente"); return; }
+        if (hit(x,y,BTN_X,Y_RANKING,BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaRanking(app,usuario)); return; }
         if (hit(x,y,BTN_X,Y_SALIR,  BTN_W,BTN_H)) {
             GestorUsuarios.getInstance().cerrarSesion();
             
