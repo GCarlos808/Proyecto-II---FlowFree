@@ -21,6 +21,10 @@ public class GestorUsuarios {
     }
     
     public Usuario registrar(String nombreUsuario, String contraseña, String nombreCompleto) throws UsuarioYaExisteException, ContraseñaInvalidaException, IOException {
+        if (nombreUsuario == null || !nombreUsuario.matches("[a-zA-Z0-9._-]{3,20}")) {
+            throw new ContraseñaInvalidaException(
+                "El usuario debe tener 3-20 caracteres y solo usar letras, números, ., _ o -");
+        }
 
         if (ArchivoUsuario.existeUsuario(nombreUsuario)) {
             throw new UsuarioYaExisteException(
@@ -61,6 +65,12 @@ public class GestorUsuarios {
     
     public void guardarProgreso() {
         if (usuarioActivo != null) guardarEnHiloSecundario(usuarioActivo);
+    }
+
+    public void guardarProgresoAhora() throws IOException {
+        if (usuarioActivo != null) {
+            ArchivoUsuario.guardar(usuarioActivo);
+        }
     }
     
     private void guardarEnHiloSecundario(Usuario usuario) {
