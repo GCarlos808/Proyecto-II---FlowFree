@@ -20,9 +20,9 @@ public final class LevelFactory {
     private static NivelFlowFree nivel1() {
         
         int[][] puntos = {
-            {0,0, 4,4},  // ROJO
-            {0,4, 4,0},  // AZUL
-            {2,1, 2,3},  // VERDE
+            {0,0, 4,4}, //rojo
+            {0,4, 4,0}, //azul
+            {2,1, 2,3}, //verde
         };
         return new NivelFlowFree(1, 5, puntos, 90, 1000, "Inicio");
     }

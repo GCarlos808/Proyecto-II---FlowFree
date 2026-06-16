@@ -1,17 +1,19 @@
 package io.proyecto2.flowfree;
 
+import java.io.Serializable;
+
 
 public class NivelFlowFree implements Nivelable, Serializable {
     private final int numero;
-    private final int tamano;
+    private final int tamaño;
     private final int[][]puntos;
     private final int tiempoLimite;
     private final int puntajeBase;
     private final String nombre;
 
-    public NivelFlowFree(int numero, int tamano, int[][] puntos, int tiempoLimite, int puntajeBase, String nombre) {
+    public NivelFlowFree(int numero, int tamaño, int[][] puntos, int tiempoLimite, int puntajeBase, String nombre) {
         this.numero = numero;
-        this.tamano = tamano;
+        this.tamaño = tamaño;
         this.puntos = puntos;
         this.tiempoLimite = tiempoLimite;
         this.puntajeBase = puntajeBase;
@@ -22,7 +24,7 @@ public class NivelFlowFree implements Nivelable, Serializable {
     @Override public boolean esCompleto() { return false; }
     @Override public int getNumeroPasos() { return 0; }
 
-    public int getTamano() { return tamano; }
+    public int getTamano() { return tamaño; }
     public int[][] getPuntosIniciales() { return puntos; }
     public int getTiempoLimite() { return tiempoLimite; }
     public int getPuntajeBase() { return puntajeBase; }

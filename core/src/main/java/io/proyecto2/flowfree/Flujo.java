@@ -8,7 +8,7 @@ public class Flujo {
     private NodoCelda head;
     private NodoCelda cola;
     private int longitud;
-
+    
     public Flujo(ColorFlow color, Celda origen, Celda destino) {
         this.color = color;
         this.origen = origen;
@@ -60,19 +60,19 @@ public class Flujo {
     public boolean estaCerrado() {
         return cola != null && cola.celda == destino;
     }
-
+    
     private NodoCelda penultimo() {
         if (head == cola) return null;
         NodoCelda n = head;
         while (n.siguiente != cola) n = n.siguiente;
         return n;
     }
-
+    
     public ColorFlow getColor() { return color; }
     public int getLongitud()     { return longitud; }
     
     private static class NodoCelda {
-        Celda     celda;
+        Celda celda;
         NodoCelda siguiente;
         NodoCelda(Celda c) { celda = c; }
     }

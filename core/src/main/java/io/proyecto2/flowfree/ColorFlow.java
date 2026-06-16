@@ -4,6 +4,7 @@ package io.proyecto2.flowfree;
 import com.badlogic.gdx.graphics.Color;
 
 public enum ColorFlow {
+    
     ROJO (new Color(0.95f, 0.20f, 0.20f, 1f)),
     AZUL (new Color(0.20f, 0.50f, 0.95f, 1f)),
     VERDE (new Color(0.10f, 0.85f, 0.30f, 1f)),

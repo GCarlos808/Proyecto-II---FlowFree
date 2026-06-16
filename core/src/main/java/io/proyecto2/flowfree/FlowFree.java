@@ -9,7 +9,7 @@ public class FlowFree extends Juego implements Nivelable {
     private Celda[][] grid;
     private Flujo[] flujos;
     private NivelFlowFree nivelCargado;
-    private int tamanoCuadricula;
+    private int tamañoCuadricula;
     private int totalCeldas;
     private int celdaOcupadas;
     private int pasos;
@@ -24,8 +24,8 @@ public class FlowFree extends Juego implements Nivelable {
     @Override
     public void cargarNivel(NivelFlowFree nivel) {
         this.nivelCargado = nivel;
-        this.tamanoCuadricula = nivel.getTamano();
-        this.totalCeldas = tamanoCuadricula * tamanoCuadricula;
+        this.tamañoCuadricula = nivel.getTamano();
+        this.totalCeldas = tamañoCuadricula * tamañoCuadricula;
         this.tiempoLimiteSegundos = nivel.getTiempoLimite();
         this.pasos = 0;
         this.celdaOcupadas = 0;
@@ -75,16 +75,16 @@ public class FlowFree extends Juego implements Nivelable {
     @Override
     protected int calcularPuntuacion() {
         int tiempoRestante = getTiempoRestante();
-        int bonus          = nivelCargado.getPuntajeBase();
+        int bonus  = nivelCargado.getPuntajeBase();
         int penalizacion   = fallos * 50;
         
         return Math.max(0, bonus + (tiempoRestante * 10) - penalizacion);
     }
     
     private void construirGrid() {
-        grid = new Celda[tamanoCuadricula][tamanoCuadricula];
-        for (int f = 0; f < tamanoCuadricula; f++) {
-            for (int c = 0; c < tamanoCuadricula; c++) {
+        grid = new Celda[tamañoCuadricula][tamañoCuadricula];
+        for (int f = 0; f < tamañoCuadricula; f++) {
+            for (int c = 0; c < tamañoCuadricula; c++) {
                 grid[f][c] = new Celda(f, c);
             }
         }
@@ -95,7 +95,7 @@ public class FlowFree extends Juego implements Nivelable {
         flujos = new Flujo[puntos.length / 2];
         
         for (int i = 0; i < flujos.length; i++) {
-            ColorFlujo color = ColorFlujo.values()[i];
+            ColorFlow color = ColorFlow.values()[i];
             Celda origen = grid[puntos[i * 2][0]][puntos[i * 2][1]];
             Celda destino = grid[puntos[i * 2 + 1][0]][puntos[i * 2 + 1][1]];
             flujos[i] = new Flujo(color, origen, destino);
@@ -109,9 +109,9 @@ public class FlowFree extends Juego implements Nivelable {
         if (estado != EstadoJuego.JUGANDO) return;
         Celda celda = grid[fila][col];
 
-        if (celda.getColor() != ColorFlujo.VACIO) {
+        if (celda.getColor() != ColorFlow.VACIO) {
             
-            flujoActivo    = encontrarFlujo(celda.getColor());
+            flujoActivo = encontrarFlujo(celda.getColor());
             arrastrandoFlujo = true;
         }
     }
@@ -130,7 +130,7 @@ public class FlowFree extends Juego implements Nivelable {
             return;
         }
         
-        if (celda.getColor() != ColorFlujo.VACIO) {
+        if (celda.getColor() != ColorFlow.VACIO) {
             Flujo otro = encontrarFlujo(celda.getColor());
             int liberadas = otro.limpiar();
             celdaOcupadas -= liberadas;
@@ -153,10 +153,10 @@ public class FlowFree extends Juego implements Nivelable {
     public void guardar(DataOutputStream out) throws IOException {
         super.guardar(out);
         out.writeInt(pasos);
-        out.writeInt(tamanoCuadricula);
+        out.writeInt(tamañoCuadricula);
         
-        for (int f = 0; f < tamanoCuadricula; f++)
-            for (int c = 0; c < tamanoCuadricula; c++)
+        for (int f = 0; f < tamañoCuadricula; f++)
+            for (int c = 0; c < tamañoCuadricula; c++)
                 grid[f][c].guardar(out);
     }
     
@@ -164,10 +164,10 @@ public class FlowFree extends Juego implements Nivelable {
     public void cargar(DataInputStream in) throws IOException {
         super.cargar(in);
         pasos             = in.readInt();
-        tamanoCuadricula  = in.readInt();
-        grid = new Celda[tamanoCuadricula][tamanoCuadricula];
-        for (int f = 0; f < tamanoCuadricula; f++)
-            for (int c = 0; c < tamanoCuadricula; c++) {
+        tamañoCuadricula  = in.readInt();
+        grid = new Celda[tamañoCuadricula][tamañoCuadricula];
+        for (int f = 0; f < tamañoCuadricula; f++)
+            for (int c = 0; c < tamañoCuadricula; c++) {
                 grid[f][c] = new Celda(f, c);
                 grid[f][c].cargar(in);
             }
@@ -176,22 +176,21 @@ public class FlowFree extends Juego implements Nivelable {
     }
     
     private boolean esCeldaValida(int f, int c) {
-        return f >= 0 && f < tamanoCuadricula && c >= 0 && c < tamanoCuadricula;
+        return f >= 0 && f < tamañoCuadricula && c >= 0 && c < tamañoCuadricula;
     }
     
-    private Flujo encontrarFlujo(ColorFlujo color) {
+    private Flujo encontrarFlujo(ColorFlow color) {
         for (Flujo f : flujos)
             if (f.getColor() == color) return f;
         return null;
     }
-
+    
     private void reconstruirFlujos() {
         
     }
-
-    // Getters Dev B
+    
     public Celda[][] getGrid() { return grid; }
     public Flujo[] getFlujos() { return flujos; }
-    public int getTamanoCuadricula() { return tamanoCuadricula; }
+    public int getTamanoCuadricula() { return tamañoCuadricula; }
     public int getPasos() { return pasos; }
 }

@@ -1,35 +1,42 @@
-package io.proyecto2.flowfree.usuario;
+package io.proyecto2.flowfree.datos;
 
-
-import io.proyecto2.flowfree.datos.ArchivoUsuario;
 import io.proyecto2.flowfree.datos.exceptions.*;
+import io.proyecto2.flowfree.usuario.Usuario;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class GestorUsuarios {
 
     private static GestorUsuarios instancia;
     private Usuario usuarioActivo;
-
+    
     private GestorUsuarios() {}
-
+    
     public static GestorUsuarios getInstance() {
         if (instancia == null) instancia = new GestorUsuarios();
         return instancia;
     }
     
-    public Usuario registrar(String nombreUsuario, String contraseña, String nombreCompleto)
-            throws UsuarioYaExisteException, ContraseñaInvalidaException, IOException {
-        
+    public Usuario registrar(String nombreUsuario, String contraseña, String nombreCompleto) throws UsuarioYaExisteException, ContraseñaInvalidaException, IOException {
+
         if (ArchivoUsuario.existeUsuario(nombreUsuario)) {
             throw new UsuarioYaExisteException(
                 "El usuario '" + nombreUsuario + "' ya está registrado.");
         }
         
-        validarContraseña(contraseña)
-                
+        validarContrasena(contraseña);
+        
+        GestorArchivoUsuario.crearEstructura(nombreUsuario);
+        
         Usuario nuevo = new Usuario(nombreUsuario, contraseña, nombreCompleto);
         ArchivoUsuario.guardar(nuevo);
+        
+        ArchivoEstadisticas.inicializar(nombreUsuario);
+        
+        GestorRanking.actualizarPuntuacion(nombreUsuario, 0, 1, 0L);
 
         usuarioActivo = nuevo;
         return nuevo;
@@ -39,7 +46,7 @@ public class GestorUsuarios {
             throws UsuarioNoEncontradoException, ContraseñaIncorrectaException, ArchivoCorruptoException {
         
         Usuario usuario = ArchivoUsuario.cargar(nombreUsuario);
-
+        
         if (!usuario.verificarContrasena(contraseña)) {
             throw new ContraseñaIncorrectaException("Contraseña incorrecta.");
         }
@@ -48,14 +55,12 @@ public class GestorUsuarios {
         usuarioActivo = usuario;
         
         guardarEnHiloSecundario(usuario);
-
+        
         return usuario;
     }
     
     public void guardarProgreso() {
-        if (usuarioActivo != null) {
-            guardarEnHiloSecundario(usuarioActivo);
-        }
+        if (usuarioActivo != null) guardarEnHiloSecundario(usuarioActivo);
     }
     
     private void guardarEnHiloSecundario(Usuario usuario) {
@@ -63,14 +68,18 @@ public class GestorUsuarios {
             try {
                 ArchivoUsuario.guardar(usuario);
             } catch (IOException e) {
-                
                 System.err.println("Error guardando usuario: " + e.getMessage());
             }
-        }, "hilo-guardado-" + usuario.getNombreUsuario()).start();
+        }, "GuardadoUsuario-" + usuario.getNombreUsuario()).start();
     }
     
-    public java.util.List<String> getRequisitosContrasena(String contraseña) {
-        java.util.List<String> fallos = new java.util.ArrayList<>();
+    public void cerrarSesion() {
+        guardarProgreso();
+        usuarioActivo = null;
+    }
+    
+    public List<String> getRequisitosContraseña(String contraseña) {
+        List<String> fallos = new ArrayList<>();
         if (contraseña.length() < 8)
             fallos.add("Mínimo 8 caracteres");
         if (!contraseña.matches(".*[A-Z].*"))
@@ -82,14 +91,11 @@ public class GestorUsuarios {
         return fallos;
     }
     
-    private void validarContrasena(String contraseña) throws ContraseñaInvalidaException {
-        var fallos = getRequisitosContrasena(contraseña);
-        if (!fallos.isEmpty()) {
-            throw new ContraseñaInvalidaException(
-                "Contraseña inválida: " + String.join(", ", fallos));
-        }
+    private void validarContrasena(String c) throws ContraseñaInvalidaException {
+        List<String> fallos = getRequisitosContraseña(c);
+        if (!fallos.isEmpty())
+            throw new ContraseñaInvalidaException(String.join(", ", fallos));
     }
-
+    
     public Usuario getUsuarioActivo() { return usuarioActivo; }
-    public void cerrarSesion() { guardarProgreso(); usuarioActivo = null; }
 }

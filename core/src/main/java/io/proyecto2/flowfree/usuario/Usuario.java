@@ -8,7 +8,7 @@ public class Usuario implements Guardable, Serializable {
     private static final long serialVersionUID = 1L;
     
     private String nombreUsuario;
-    private String contrasenaHash;
+    private String contraseñaHash;
     private String nombreCompleto;
     private LocalDateTime fechaRegistro;
     private LocalDateTime ultimaSesion;
@@ -23,9 +23,9 @@ public class Usuario implements Guardable, Serializable {
     private Estadisticas estadisticas;
     private ListaAmigos amigos;
     
-    public Usuario(String nombreUsuario, String contrasena, String nombreCompleto) {
+    public Usuario(String nombreUsuario, String contraseña, String nombreCompleto) {
         this.nombreUsuario = nombreUsuario;
-        this.contrasenaHash = hashContrasena(contrasena);
+        this.contraseñaHash = hashContrasena(contraseña);
         this.nombreCompleto = nombreCompleto;
         this.fechaRegistro = LocalDateTime.now();
         this.ultimaSesion = LocalDateTime.now();
@@ -39,10 +39,10 @@ public class Usuario implements Guardable, Serializable {
         this.rutaAvatar = "avatars/default.png";
     }
     
-    private String hashContrasena(String contrasena) {
+    private String hashContrasena(String contraseña) {
         try {
             var digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(contrasena.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(contraseña.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (byte b : hash) sb.append(String.format("%02x", b));
             return sb.toString();
@@ -51,14 +51,14 @@ public class Usuario implements Guardable, Serializable {
         }
     }
     
-    public boolean verificarContrasena(String contrasena) {
-        return this.contrasenaHash.equals(hashContrasena(contrasena));
+    public boolean verificarContrasena(String contraseña) {
+        return this.contraseñaHash.equals(hashContrasena(contraseña));
     }
     
     @Override
     public void guardar(DataOutputStream out) throws IOException {
         out.writeUTF(nombreUsuario);
-        out.writeUTF(contrasenaHash);
+        out.writeUTF(contraseñaHash);
         out.writeUTF(nombreCompleto);
         out.writeUTF(fechaRegistro.toString());
         out.writeUTF(ultimaSesion.toString());
@@ -75,7 +75,7 @@ public class Usuario implements Guardable, Serializable {
     @Override
     public void cargar(DataInputStream in) throws IOException {
         nombreUsuario = in.readUTF();
-        contrasenaHash = in.readUTF();
+        contraseñaHash = in.readUTF();
         nombreCompleto = in.readUTF();
         fechaRegistro = LocalDateTime.parse(in.readUTF());
         ultimaSesion = LocalDateTime.parse(in.readUTF());
@@ -87,6 +87,20 @@ public class Usuario implements Guardable, Serializable {
         preferencias = new Preferencias(); preferencias.cargar(in);
         estadisticas = new Estadisticas(); estadisticas.cargar(in);
         amigos = new ListaAmigos();  amigos.cargar(in);
+    }
+    
+    @Override
+    public String toString() {
+        return "Usuario{" +
+            "\n  nombreUsuario  = '" + nombreUsuario + "'" +
+            "\n  nombreCompleto = '" + nombreCompleto + "'" +
+            "\n  fechaRegistro  = " + fechaRegistro +
+            "\n  ultimaSesion   = " + ultimaSesion +
+            "\n  nivelActual    = " + nivelActual +
+            "\n  vidas          = " + vidasRestantes +
+            "\n  puntuacion     = " + puntuacion +
+            "\n  partidas       = " + estadisticas.getPartidasJugadas() +
+            "\n}";
     }
     
     public String getNombreUsuario() { return nombreUsuario; }
