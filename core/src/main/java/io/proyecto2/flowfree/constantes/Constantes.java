@@ -8,6 +8,9 @@ public final class Constantes {
     public static final String CARPETA_DATOS = "data";
     public static final String CARPETA_USUARIOS = "data/usuarios";
     public static final String RANKING_GLOBAL = "data/ranking_global.dat";
+    public static final String ARCHIVO_SOLICITUDES_ENTRADA = "solicitudes_entrada.dat";
+    public static final String ARCHIVO_SOLICITUDES_ENVIADAS = "solicitudes_enviadas.dat";
+    public static final String ARCHIVO_DESAFIOS_ENTRADA = "desafios_entrada.dat";
     
     public static final int ANCHO_VIRTUAL = 800;
     public static final int ALTO_VIRTUAL  = 600;
@@ -26,4 +29,7 @@ public final class Constantes {
     public static final int RAF_TAMANO_REGISTRO  = 56; // 32+4+4+8+8
     
     public static final int PASS_MIN_LONGITUD = 8;
+
+    /** Ruta interna del tema de fondo (relativa a la carpeta {@code assets/}). */
+    public static final String MUSICA_FONDO = "music/musica_fondo.ogg";
 }

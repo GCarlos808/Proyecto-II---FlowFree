@@ -3,9 +3,17 @@ package io.proyecto2.flowfree;
 
 import io.proyecto2.flowfree.usuario.Usuario;
 import java.io.*;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
 
 public class FlowFree extends Juego implements Nivelable {
-    
+
+    private static final ColorFlow[] COLORES_NIVEL = {
+        ColorFlow.ROJO, ColorFlow.AZUL, ColorFlow.VERDE, ColorFlow.AMARILLO,
+        ColorFlow.NARANJA, ColorFlow.CYAN, ColorFlow.MORADO, ColorFlow.MARRON
+    };
+
     private Celda[][] grid;
     private Flujo[] flujos;
     private NivelFlowFree nivelCargado;
@@ -57,14 +65,67 @@ public class FlowFree extends Juego implements Nivelable {
     
     @Override
     protected boolean verificarVictoria() {
-        boolean todosFlujosCerrados = true;
-        for (Flujo f : flujos) {
-            if (!f.estaCerrado()) {
-                todosFlujosCerrados = false;
-                break;
+        if (flujos == null) return false;
+
+        int ocupadas = 0;
+        for (int f = 0; f < tamañoCuadricula; f++) {
+            for (int c = 0; c < tamañoCuadricula; c++) {
+                if (grid[f][c].getColor() != ColorFlow.VACIO) ocupadas++;
             }
         }
-        return todosFlujosCerrados && (celdaOcupadas == totalCeldas);
+        if (ocupadas != totalCeldas) return false;
+
+        for (Flujo flujo : flujos) {
+            if (!flujoConectadoEnGrid(flujo)) return false;
+        }
+        return true;
+    }
+
+    private boolean flujoConectadoEnGrid(Flujo flujo) {
+        ColorFlow color = flujo.getColor();
+        Celda origen = flujo.getOrigen();
+        Celda destino = flujo.getDestino();
+
+        if (origen.getColor() != color || destino.getColor() != color) return false;
+
+        Set<Celda> componente = componenteColor(color, origen);
+        if (!componente.contains(destino)) return false;
+
+        for (int f = 0; f < tamañoCuadricula; f++) {
+            for (int c = 0; c < tamañoCuadricula; c++) {
+                Celda celda = grid[f][c];
+                if (celda.getColor() == color && !componente.contains(celda)) return false;
+            }
+        }
+        return true;
+    }
+
+    private Set<Celda> componenteColor(ColorFlow color, Celda inicio) {
+        Set<Celda> visitadas = new HashSet<>();
+        ArrayDeque<Celda> pendientes = new ArrayDeque<>();
+        pendientes.add(inicio);
+        visitadas.add(inicio);
+
+        while (!pendientes.isEmpty()) {
+            Celda actual = pendientes.removeFirst();
+            for (Celda vecina : vecinas(actual)) {
+                if (vecina.getColor() == color && visitadas.add(vecina)) {
+                    pendientes.add(vecina);
+                }
+            }
+        }
+        return visitadas;
+    }
+
+    private Celda[] vecinas(Celda celda) {
+        int f = celda.getFila();
+        int c = celda.getCol();
+        ArrayDeque<Celda> lista = new ArrayDeque<>();
+        if (f > 0) lista.add(grid[f - 1][c]);
+        if (f < tamañoCuadricula - 1) lista.add(grid[f + 1][c]);
+        if (c > 0) lista.add(grid[f][c - 1]);
+        if (c < tamañoCuadricula - 1) lista.add(grid[f][c + 1]);
+        return lista.toArray(Celda[]::new);
     }
     
     @Override
@@ -92,17 +153,33 @@ public class FlowFree extends Juego implements Nivelable {
     
     private void inicializarFlujos() {
         int[][] puntos = nivelCargado.getPuntosIniciales();
-        flujos = new Flujo[puntos.length / 2];
+        flujos = new Flujo[puntos.length];
         
         for (int i = 0; i < flujos.length; i++) {
-            ColorFlow color = ColorFlow.values()[i];
-            Celda origen = grid[puntos[i * 2][0]][puntos[i * 2][1]];
-            Celda destino = grid[puntos[i * 2 + 1][0]][puntos[i * 2 + 1][1]];
+            ColorFlow color = COLORES_NIVEL[i];
+            Celda origen = grid[puntos[i][0]][puntos[i][1]];
+            Celda destino = grid[puntos[i][2]][puntos[i][3]];
             flujos[i] = new Flujo(color, origen, destino);
             origen.setColor(color); origen.setEsPuntoFijo(true);
             destino.setColor(color); destino.setEsPuntoFijo(true);
             celdaOcupadas += 2;
         }
+    }
+
+    private int limpiarTrazo(Flujo flujo) {
+        int liberadas = 0;
+        ColorFlow color = flujo.getColor();
+        for (int f = 0; f < tamañoCuadricula; f++) {
+            for (int c = 0; c < tamañoCuadricula; c++) {
+                Celda celda = grid[f][c];
+                if (celda.getColor() == color && !celda.isEsPuntoFijo()) {
+                    celda.limpiar();
+                    liberadas++;
+                }
+            }
+        }
+        flujo.resetearLista();
+        return liberadas;
     }
     
     public void onToqueCelda(int fila, int col) {
@@ -110,8 +187,16 @@ public class FlowFree extends Juego implements Nivelable {
         Celda celda = grid[fila][col];
 
         if (celda.getColor() != ColorFlow.VACIO) {
-            
             flujoActivo = encontrarFlujo(celda.getColor());
+            if (flujoActivo != null) {
+                if (flujoActivo.contiene(celda)) {
+                    int liberadas = flujoActivo.retrocederHasta(celda);
+                    celdaOcupadas -= liberadas;
+                } else if (!celda.isEsPuntoFijo()) {
+                    int liberadas = limpiarTrazo(flujoActivo);
+                    celdaOcupadas -= liberadas;
+                }
+            }
             arrastrandoFlujo = true;
         }
     }
@@ -135,15 +220,23 @@ public class FlowFree extends Juego implements Nivelable {
 
         if (celda.getColor() != ColorFlow.VACIO) {
             Flujo otro = encontrarFlujo(celda.getColor());
-            if (otro != null) {
-                int liberadas = otro.limpiar();
+            if (otro != null && otro != flujoActivo) {
+                int liberadas = limpiarTrazo(otro);
                 celdaOcupadas -= liberadas;
             }
         }
 
+        if (celda.getColor() == flujoActivo.getColor() && !flujoActivo.contiene(celda)) {
+            if (flujoActivo.avanzar(celda)) {
+                pasos++;
+            }
+            return;
+        }
+
         if (flujoActivo.avanzar(celda)) {
+            boolean celdaNueva = celda.getColor() == ColorFlow.VACIO;
             celda.setColor(flujoActivo.getColor());
-            celdaOcupadas++;
+            if (celdaNueva) celdaOcupadas++;
             pasos++;
         }
     }
@@ -192,13 +285,13 @@ public class FlowFree extends Juego implements Nivelable {
     
     private void reconstruirFlujos() {
         int[][] puntos = nivelCargado.getPuntosIniciales();
-        flujos = new Flujo[puntos.length / 2];
+        flujos = new Flujo[puntos.length];
         celdaOcupadas = 0;
 
         for (int i = 0; i < flujos.length; i++) {
-            ColorFlow color = ColorFlow.values()[i];
-            Celda origen = grid[puntos[i * 2][0]][puntos[i * 2][1]];
-            Celda destino = grid[puntos[i * 2 + 1][0]][puntos[i * 2 + 1][1]];
+            ColorFlow color = COLORES_NIVEL[i];
+            Celda origen = grid[puntos[i][0]][puntos[i][1]];
+            Celda destino = grid[puntos[i][2]][puntos[i][3]];
             flujos[i] = new Flujo(color, origen, destino);
 
             for (int f = 0; f < tamañoCuadricula; f++) {
@@ -237,4 +330,28 @@ public class FlowFree extends Juego implements Nivelable {
     public Flujo[] getFlujos() { return flujos; }
     public int getTamanoCuadricula() { return tamañoCuadricula; }
     public int getPasos() { return pasos; }
+
+    public int contarCeldasOcupadas() {
+        int ocupadas = 0;
+        for (int f = 0; f < tamañoCuadricula; f++) {
+            for (int c = 0; c < tamañoCuadricula; c++) {
+                if (grid[f][c].getColor() != ColorFlow.VACIO) ocupadas++;
+            }
+        }
+        return ocupadas;
+    }
+
+    public boolean flujosConectados() {
+        if (flujos == null) return false;
+        for (Flujo flujo : flujos) {
+            if (!flujoConectadoEnGrid(flujo)) return false;
+        }
+        return true;
+    }
+
+    public boolean todosFlujosCerrados() {
+        return flujosConectados() && contarCeldasOcupadas() == totalCeldas;
+    }
+
+    public int getTotalCeldas() { return totalCeldas; }
 }

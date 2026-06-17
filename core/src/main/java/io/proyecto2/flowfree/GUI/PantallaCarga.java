@@ -21,6 +21,9 @@ public class PantallaCarga implements Screen {
     @Override
     public void show() {
         Gdx.app.log("PantallaCarga", "Cargando recursos...");
+        if (app.getGestorMusica() != null) {
+            app.getGestorMusica().cargar();
+        }
     }
     
     @Override
@@ -62,6 +65,9 @@ public class PantallaCarga implements Screen {
         app.batch.end();
         
         if (listo && progresoVisual >= 0.99f) {
+            if (app.getGestorMusica() != null) {
+                app.getGestorMusica().reproducir();
+            }
             app.cambiarPantalla(new PantallaLogin(app));
         }
     }

@@ -7,15 +7,19 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import io.proyecto2.flowfree.Main;
 import io.proyecto2.flowfree.constantes.Estilos;
+import io.proyecto2.flowfree.datos.GestorArchivoUsuario;
 import io.proyecto2.flowfree.datos.GestorUsuarios;
 import io.proyecto2.flowfree.usuario.Preferencias;
 import io.proyecto2.flowfree.usuario.Usuario;
+import io.proyecto2.flowfree.util.GestorAvatares;
+
+import com.badlogic.gdx.graphics.Texture;
 
 import java.io.IOException;
 
 public class PantallaPerfil implements Screen {
 
-    private static final String[] AVATARES = {"default", "space", "retro", "neon"};
+    private static final String[] AVATARES = GestorAvatares.IDS;
     private static final String[] IDIOMAS = {"es", "en"};
     private static final String[] CONTROLES = {"mouse", "teclado"};
 
@@ -38,6 +42,7 @@ public class PantallaPerfil implements Screen {
 
     @Override
     public void show() {
+        app.aplicarVolumenUsuario(usuario);
         Gdx.input.setInputProcessor(new InputAdapter() {
             @Override
             public boolean touchDown(int sx, int sy, int p, int b) {
@@ -48,8 +53,7 @@ public class PantallaPerfil implements Screen {
     }
 
     private void cargarDesdeUsuario() {
-        String avatarActual = usuario.getRutaAvatar() == null ? "default" : usuario.getRutaAvatar();
-        avatarIdx = buscarIndice(AVATARES, avatarActual, 0);
+        avatarIdx = GestorAvatares.indiceDe(usuario.getRutaAvatar());
         Preferencias pref = usuario.getPreferencias();
         idiomaIdx = buscarIndice(IDIOMAS, pref.getIdioma(), 0);
         controlesIdx = buscarIndice(CONTROLES, pref.getControles(), 0);
@@ -64,14 +68,17 @@ public class PantallaPerfil implements Screen {
     }
 
     private void manejarClic(float x, float y) {
-        if (hit(x, y, 180f, 440f, 40f, 40f)) avatarIdx = (avatarIdx + AVATARES.length - 1) % AVATARES.length;
-        if (hit(x, y, 580f, 440f, 40f, 40f)) avatarIdx = (avatarIdx + 1) % AVATARES.length;
+        if (hit(x, y, 180f, 436f, 40f, 48f)) avatarIdx = (avatarIdx + AVATARES.length - 1) % AVATARES.length;
+        if (hit(x, y, 580f, 436f, 40f, 48f)) avatarIdx = (avatarIdx + 1) % AVATARES.length;
         if (hit(x, y, 180f, 360f, 440f, 42f)) idiomaIdx = (idiomaIdx + 1) % IDIOMAS.length;
         if (hit(x, y, 180f, 300f, 440f, 42f)) controlesIdx = (controlesIdx + 1) % CONTROLES.length;
 
         if (hit(x, y, 180f, 240f, 440f, 18f)) {
             volumen = (x - 180f) / 440f;
             volumen = Math.max(0f, Math.min(1f, volumen));
+            if (app.getGestorMusica() != null) {
+                app.getGestorMusica().setVolumen(volumen);
+            }
         }
 
         if (hit(x, y, 180f, 150f, 210f, 44f)) {
@@ -91,6 +98,9 @@ public class PantallaPerfil implements Screen {
         usuario.getPreferencias().setVolumen(volumen);
 
         try {
+            GestorAvatares.exportar(
+                GestorArchivoUsuario.rutaAvatar(usuario.getNombreUsuario()),
+                AVATARES[avatarIdx]);
             GestorUsuarios.getInstance().guardarProgresoAhora();
             mensaje = "Perfil guardado correctamente";
         } catch (IOException e) {
@@ -144,21 +154,31 @@ public class PantallaPerfil implements Screen {
     }
 
     private void dibujarSelectorAvatar() {
-        app.dibujarRect(180f, 440f, 40f, 40f, Estilos.COLOR_PANEL_INPUT);
-        app.dibujarBorde(180f, 440f, 40f, 40f, 1f, Estilos.COLOR_BORDE_PANEL);
-        app.fontMediana.setColor(Estilos.COLOR_TEXTO_CLARO);
-        app.fontMediana.draw(app.batch, "<", 194f, 468f);
+        float previewY = 436f;
+        float previewSize = 48f;
 
-        app.dibujarRect(240f, 440f, 320f, 40f, Estilos.COLOR_PANEL_INPUT);
-        app.dibujarBorde(240f, 440f, 320f, 40f, 1f, Estilos.COLOR_BORDE_PANEL);
-        app.fontMediana.setColor(Estilos.COLOR_ACENTO_CYAN);
-        GlyphLayout ga = new GlyphLayout(app.fontMediana, AVATARES[avatarIdx]);
-        app.fontMediana.draw(app.batch, AVATARES[avatarIdx], 240f + (320f - ga.width) / 2f, 466f);
-
-        app.dibujarRect(580f, 440f, 40f, 40f, Estilos.COLOR_PANEL_INPUT);
-        app.dibujarBorde(580f, 440f, 40f, 40f, 1f, Estilos.COLOR_BORDE_PANEL);
+        app.dibujarRect(180f, previewY, 40f, 48f, Estilos.COLOR_PANEL_INPUT);
+        app.dibujarBorde(180f, previewY, 40f, 48f, 1f, Estilos.COLOR_BORDE_PANEL);
         app.fontMediana.setColor(Estilos.COLOR_TEXTO_CLARO);
-        app.fontMediana.draw(app.batch, ">", 594f, 468f);
+        app.fontMediana.draw(app.batch, "<", 194f, previewY + 32f);
+
+        app.dibujarRect(240f, previewY, 320f, 48f, Estilos.COLOR_PANEL_INPUT);
+        app.dibujarBorde(240f, previewY, 320f, 48f, 1f, Estilos.COLOR_BORDE_PANEL);
+
+        Texture avatar = GestorAvatares.obtener(AVATARES[avatarIdx]);
+        float imgX = 240f + (320f - previewSize) / 2f;
+        float imgY = previewY + (48f - previewSize) / 2f;
+        app.batch.draw(avatar, imgX, imgY, previewSize, previewSize);
+
+        app.fontPequena.setColor(Estilos.COLOR_TEXTO_GRIS);
+        GlyphLayout ga = new GlyphLayout(app.fontPequena, AVATARES[avatarIdx]);
+        app.fontPequena.draw(app.batch, AVATARES[avatarIdx],
+            240f + (320f - ga.width) / 2f, previewY - 8f);
+
+        app.dibujarRect(580f, previewY, 40f, 48f, Estilos.COLOR_PANEL_INPUT);
+        app.dibujarBorde(580f, previewY, 40f, 48f, 1f, Estilos.COLOR_BORDE_PANEL);
+        app.fontMediana.setColor(Estilos.COLOR_TEXTO_CLARO);
+        app.fontMediana.draw(app.batch, ">", 594f, previewY + 32f);
     }
 
     private void dibujarCampo(String label, String valor, float y) {

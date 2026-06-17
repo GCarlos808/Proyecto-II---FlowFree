@@ -9,32 +9,36 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 
 import io.proyecto2.flowfree.constantes.Constantes;
 import io.proyecto2.flowfree.constantes.Estilos;
 import io.proyecto2.flowfree.GUI.PantallaCarga;
+import io.proyecto2.flowfree.util.GestorAvatares;
+import io.proyecto2.flowfree.util.GestorMusica;
+import io.proyecto2.flowfree.usuario.Usuario;
 
 import java.io.IOException;
 import java.nio.file.*;
 
 
 public class Main extends Game {
-    
+
     public SpriteBatch  batch;
     public AssetManager assets;
     public Texture pixel;
     
     public BitmapFont fontPequena;
-    public BitmapFont fontMediana; 
+    public BitmapFont fontMediana;
     public BitmapFont fontGrande;
     public BitmapFont fontTitulo;
+
+    private GestorMusica gestorMusica;
     
     @Override
     public void create() {
         inicializarRecursos();
         inicializarSistemaDatos();
+        gestorMusica = new GestorMusica();
         setScreen(new PantallaCarga(this));
     }
     
@@ -47,44 +51,20 @@ public class Main extends Game {
         pm.fill();
         pixel = new Texture(pm);
         pm.dispose();
-
-        cargarFuentes();
-    }
-    
-    private void cargarFuentes() {
-        try {
-            FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Rajdhani-SemiBold.ttf"));
-
-            fontPequena = buildFont(gen, 16, Estilos.COLOR_TEXTO_CLARO);
-            fontMediana = buildFont(gen, 24, Estilos.COLOR_TEXTO_CLARO);
-            fontGrande  = buildFont(gen, 40, Estilos.COLOR_ACENTO_CYAN);
-            fontTitulo  = buildFont(gen, 64, Estilos.COLOR_ACENTO_CYAN);
-            gen.dispose();
-
-        } catch (Exception e) {
-            
-            Gdx.app.log("Main", "Usando fuente por defecto (falta Rajdhani-SemiBold.ttf)");
-            fontPequena = new BitmapFont();
-            fontMediana = new BitmapFont();
-            fontGrande  = new BitmapFont();
-            fontTitulo  = new BitmapFont();
-            fontMediana.getData().setScale(1.5f);
-            fontGrande.getData().setScale(2.5f);
-            fontTitulo.getData().setScale(4f);
-        }
-    }
-    
-    private BitmapFont buildFont(FreeTypeFontGenerator gen, int size, Color color) {
-        FreeTypeFontParameter p = new FreeTypeFontParameter();
-        p.size = size;
-        p.color  = color;
-        p.borderWidth = 1f;
-        p.borderColor = new Color(0f, 0f, 0f, 0.5f);
         
-        p.characters = FreeTypeFontGenerator.DEFAULT_CHARS + "áéíóúÁÉÍÓÚñÑüÜ¿¡";
-        p.magFilter   = Texture.TextureFilter.Linear;
-        p.minFilter   = Texture.TextureFilter.Linear;
-        return gen.generateFont(p);
+        fontPequena = new BitmapFont();
+        fontMediana = new BitmapFont();
+        fontGrande  = new BitmapFont();
+        fontTitulo  = new BitmapFont();
+        
+        fontMediana.getData().setScale(1.5f);
+        fontGrande.getData().setScale(2.5f);
+        fontTitulo.getData().setScale(4f);
+        
+        fontGrande.setColor(Estilos.COLOR_ACENTO_CYAN);
+        fontTitulo.setColor(Estilos.COLOR_ACENTO_CYAN);
+        
+        Gdx.app.log("Main", "Usando fuente por defecto (FreeType desactivado)");
     }
     
     private void inicializarSistemaDatos() {
@@ -108,22 +88,43 @@ public class Main extends Game {
     }
     
     @Override
+    public void pause() {
+        if (gestorMusica != null) gestorMusica.pausar();
+    }
+
+    @Override
+    public void resume() {
+        if (gestorMusica != null) gestorMusica.reanudar();
+    }
+
+    @Override
     public void dispose() {
         if (getScreen() != null) getScreen().dispose();
+        if (gestorMusica != null) gestorMusica.dispose();
         batch.dispose();
         assets.dispose();
         pixel.dispose();
-        
+
         if (fontPequena != null) fontPequena.dispose();
         if (fontMediana != null) fontMediana.dispose();
         if (fontGrande  != null) fontGrande.dispose();
         if (fontTitulo  != null) fontTitulo.dispose();
+        GestorAvatares.dispose();
     }
     
     public void cambiarPantalla(Screen nueva) {
         Screen anterior = getScreen();
         setScreen(nueva);
         if (anterior != null) anterior.dispose();
+    }
+
+    public GestorMusica getGestorMusica() {
+        return gestorMusica;
+    }
+
+    public void aplicarVolumenUsuario(Usuario usuario) {
+        if (gestorMusica == null || usuario == null) return;
+        gestorMusica.setVolumen(usuario.getPreferencias().getVolumen());
     }
     
     public void dibujarRect(float x, float y, float w, float h, Color color) {

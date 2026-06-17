@@ -45,10 +45,14 @@ public class Flujo {
             if (!actual.celda.isEsPuntoFijo()) { actual.celda.limpiar(); liberadas++; }
             actual = actual.siguiente;
         }
+        resetearLista();
+        return liberadas;
+    }
+
+    public void resetearLista() {
         head.siguiente = null;
         cola = head;
         longitud = 1;
-        return liberadas;
     }
     
     public boolean contiene(Celda celda) {
@@ -58,7 +62,7 @@ public class Flujo {
     }
     
     public boolean estaCerrado() {
-        return cola != null && cola.celda == destino;
+        return longitud >= 2 && contiene(origen) && contiene(destino);
     }
     
     private NodoCelda penultimo() {
@@ -69,6 +73,8 @@ public class Flujo {
     }
     
     public ColorFlow getColor() { return color; }
+    public Celda getOrigen() { return origen; }
+    public Celda getDestino() { return destino; }
     public int getLongitud() { return longitud; }
     public Celda getCeldaCola() { return cola != null ? cola.celda : origen; }
     

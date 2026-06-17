@@ -17,7 +17,7 @@ public class PantallaMapa implements Screen {
     private final Usuario usuario;
     
     private static final String[] NOMBRES = {"Inicio","Calentando","Intermedio","Avanzado","Maestro"};
-    private static final String[] GRIDS = {"5×5","6×6","7×7","8×8","9×9"};
+    private static final String[] GRIDS = {"5x5","6x6","7x7","8x8","9x9"};
 
     private static final float CW=170f, CH=100f, GAP=20f;
     

@@ -1,9 +1,12 @@
 package io.proyecto2.flowfree.datos;
 
 import io.proyecto2.flowfree.constantes.Constantes;
+import io.proyecto2.flowfree.util.GestorAvatares;
 
-import java.io.*;
-import java.nio.file.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,6 +45,15 @@ public final class GestorArchivoUsuario {
     public static Path rutaAvatar(String usuario) {
         return rutaCarpeta(usuario).resolve("avatar.png");
     }
+    public static Path rutaSolicitudesEntrada(String usuario) {
+        return rutaCarpeta(usuario).resolve(Constantes.ARCHIVO_SOLICITUDES_ENTRADA);
+    }
+    public static Path rutaSolicitudesEnviadas(String usuario) {
+        return rutaCarpeta(usuario).resolve(Constantes.ARCHIVO_SOLICITUDES_ENVIADAS);
+    }
+    public static Path rutaDesafiosEntrada(String usuario) {
+        return rutaCarpeta(usuario).resolve(Constantes.ARCHIVO_DESAFIOS_ENTRADA);
+    }
     
     public static void crearEstructura(String nombreUsuario) throws IOException {
         Path carpeta = rutaCarpeta(nombreUsuario);
@@ -58,10 +70,9 @@ public final class GestorArchivoUsuario {
     }
     
     private static void copiarAvatarDefault(Path destino) {
-        if (Files.exists(destino)) return;
-        try (InputStream src = GestorArchivoUsuario.class
-                .getResourceAsStream("/assets/avatars/default.png")) {
-            if (src != null) Files.copy(src, destino);
+        try {
+            if (Files.exists(destino) && Files.size(destino) > 0) return;
+            GestorAvatares.exportar(destino, "default");
         } catch (IOException e) {
             System.err.println("No se pudo copiar avatar: " + e.getMessage());
         }

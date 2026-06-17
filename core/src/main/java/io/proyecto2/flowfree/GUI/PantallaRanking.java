@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import io.proyecto2.flowfree.Main;
 import io.proyecto2.flowfree.constantes.Estilos;
+import io.proyecto2.flowfree.datos.GestorAmigos;
 import io.proyecto2.flowfree.datos.GestorRanking;
 import io.proyecto2.flowfree.usuario.Usuario;
 
@@ -21,6 +22,7 @@ public class PantallaRanking implements Screen {
 
     private List<GestorRanking.EntradaRanking> ranking = Collections.emptyList();
     private String mensajeError = "";
+    private boolean vistaAmigos = false;
 
     public PantallaRanking(Main app, Usuario usuario) {
         this.app = app;
@@ -36,6 +38,17 @@ public class PantallaRanking implements Screen {
                 float y = Gdx.graphics.getHeight() - sy;
                 if (hit(sx, y, 30f, 20f, 120f, 36f)) {
                     app.cambiarPantalla(new PantallaMenu(app, usuario));
+                    return true;
+                }
+                if (hit(sx, y, 520f, 510f, 120f, 32f)) {
+                    vistaAmigos = false;
+                    cargarRanking();
+                    return true;
+                }
+                if (hit(sx, y, 650f, 510f, 120f, 32f)) {
+                    vistaAmigos = true;
+                    cargarRanking();
+                    return true;
                 }
                 return true;
             }
@@ -44,7 +57,7 @@ public class PantallaRanking implements Screen {
 
     private void cargarRanking() {
         try {
-            ranking = GestorRanking.leerTodos();
+            ranking = vistaAmigos ? GestorAmigos.rankingAmigos(usuario) : GestorRanking.leerTodos();
             mensajeError = "";
         } catch (IOException e) {
             ranking = Collections.emptyList();
@@ -60,8 +73,11 @@ public class PantallaRanking implements Screen {
         app.batch.begin();
 
         app.fontGrande.setColor(Estilos.COLOR_ACENTO_CYAN);
-        GlyphLayout title = new GlyphLayout(app.fontGrande, "RANKING GLOBAL");
-        app.fontGrande.draw(app.batch, "RANKING GLOBAL", (800f - title.width) / 2f, 550f);
+        String tituloTxt = vistaAmigos ? "RANKING AMIGOS" : "RANKING GLOBAL";
+        GlyphLayout title = new GlyphLayout(app.fontGrande, tituloTxt);
+        app.fontGrande.draw(app.batch, tituloTxt, (800f - title.width) / 2f, 550f);
+
+        dibujarToggleVista();
 
         dibujarTopRanking();
         dibujarComparacion();
@@ -81,7 +97,7 @@ public class PantallaRanking implements Screen {
         app.dibujarBorde(40f, 170f, 460f, 330f, 1f, Estilos.COLOR_BORDE_PANEL);
 
         app.fontPequena.setColor(Estilos.COLOR_TEXTO_GRIS);
-        app.fontPequena.draw(app.batch, "TOP JUGADORES", 60f, 485f);
+        app.fontPequena.draw(app.batch, vistaAmigos ? "TOP AMIGOS" : "TOP JUGADORES", 60f, 485f);
         app.fontPequena.draw(app.batch, "POS", 60f, 460f);
         app.fontPequena.draw(app.batch, "USUARIO", 120f, 460f);
         app.fontPequena.draw(app.batch, "PTS", 320f, 460f);
@@ -90,7 +106,10 @@ public class PantallaRanking implements Screen {
         int limite = Math.min(8, ranking.size());
         if (limite == 0) {
             app.fontPequena.setColor(Estilos.COLOR_TEXTO_DISABLED);
-            app.fontPequena.draw(app.batch, "Aun no hay partidas registradas.", 60f, 430f);
+            String vacio = vistaAmigos
+                ? "Agrega amigos para competir en este ranking."
+                : "Aun no hay partidas registradas.";
+            app.fontPequena.draw(app.batch, vacio, 60f, 430f);
             return;
         }
 
@@ -152,6 +171,19 @@ public class PantallaRanking implements Screen {
             if (ranking.get(i).nombre().equalsIgnoreCase(actual)) return i + 1;
         }
         return -1;
+    }
+
+    private void dibujarToggleVista() {
+        dibujarTabRanking("GLOBAL", 520f, !vistaAmigos);
+        dibujarTabRanking("AMIGOS", 650f, vistaAmigos);
+    }
+
+    private void dibujarTabRanking(String txt, float x, boolean activo) {
+        app.dibujarRect(x, 510f, 120f, 32f, activo ? Estilos.COLOR_PANEL_INPUT : Estilos.COLOR_PANEL_CARD);
+        app.dibujarBorde(x, 510f, 120f, 32f, 1f, activo ? Estilos.COLOR_ACENTO_CYAN : Estilos.COLOR_BORDE_PANEL);
+        app.fontPequena.setColor(activo ? Estilos.COLOR_ACENTO_CYAN : Estilos.COLOR_TEXTO_GRIS);
+        GlyphLayout g = new GlyphLayout(app.fontPequena, txt);
+        app.fontPequena.draw(app.batch, txt, x + (120f - g.width) / 2f, 532f);
     }
 
     private void dibujarBotonVolver() {

@@ -43,6 +43,9 @@ public class PantallaRegistro implements Screen {
     private static final float Y_LC = 255f; private static final float Y_IC = 230f;
     private static final float Y_BTN1 = 140f;
     private static final float Y_BTN2 = 82f;
+    private static final float BTN_PASS_W = 36f;
+    private static final float BTN_PASS_X = CX + FORM_W - BTN_PASS_W;
+    private static final float INPUT_W = FORM_W - BTN_PASS_W;
     
     public PantallaRegistro(Main app) { this.app = app; }
     
@@ -107,9 +110,9 @@ public class PantallaRegistro implements Screen {
     private void manejarClic(float x, float y) {
         if (hit(x,y,CX,Y_IU,FORM_W,IN_H)) { campoActivo=Campo.USUARIO; return; }
         if (hit(x,y,CX,Y_IN,FORM_W,IN_H)) { campoActivo=Campo.NOMBRE; return; }
-        if (hit(x,y,CX,Y_IP,FORM_W,IN_H)) { campoActivo=Campo.PASS; return; }
-        if (hit(x,y,CX,Y_IC,FORM_W,IN_H)) { campoActivo=Campo.CONF; return; }
-        if (hit(x,y,CX+FORM_W-36f,Y_IP,32f,IN_H)) { mostrarPass = !mostrarPass; return; }
+        if (hit(x,y,BTN_PASS_X,Y_IP,BTN_PASS_W,IN_H)) { mostrarPass = !mostrarPass; return; }
+        if (hit(x,y,CX,Y_IP,INPUT_W,IN_H)) { campoActivo=Campo.PASS; return; }
+        if (hit(x,y,CX,Y_IC,INPUT_W,IN_H)) { campoActivo=Campo.CONF; return; }
         if (hit(x,y,CX,Y_BTN1,FORM_W,BTN_H)) { intentarRegistro(); return; }
         if (hit(x,y,CX,Y_BTN2,FORM_W,BTN_H)) { app.cambiarPantalla(new PantallaLogin(app)); return; }
         campoActivo = Campo.NINGUNO;
@@ -134,10 +137,7 @@ public class PantallaRegistro implements Screen {
         campo("Nombre completo", campoNombre.toString(),  Y_LN, Y_IN, campoActivo==Campo.NOMBRE,  false);
         campo("Contraseña", campoPass.toString(), Y_LP, Y_IP, campoActivo==Campo.PASS, !mostrarPass);
         campo("Confirmar contraseña", campoConf.toString(), Y_LC, Y_IC, campoActivo==Campo.CONF, !mostrarPass);
-        
-        app.dibujarRect(CX+FORM_W-36f, Y_IP, 32f, IN_H, Estilos.COLOR_PANEL_INPUT);
-        app.fontPequena.setColor(Estilos.COLOR_TEXTO_GRIS);
-        app.fontPequena.draw(app.batch, mostrarPass?"O":"Ø", CX+FORM_W-28f, Y_IP+IN_H/2f+6f);
+        dibujarTogglePass(Y_IP);
         
         if (campoPass.length() > 0) {
             String[] todos = {"Mínimo 8 caracteres","Al menos una mayúscula","Al menos un número","Al menos un símbolo"};
@@ -162,15 +162,32 @@ public class PantallaRegistro implements Screen {
     }
     
     private void campo(String lbl, String val, float yL, float yI, boolean act, boolean ocultar) {
+        float labelY = yI + IN_H + 12f;
         app.fontPequena.setColor(act ? Estilos.COLOR_ACENTO_CYAN : Estilos.COLOR_TEXTO_GRIS);
-        app.fontPequena.draw(app.batch, lbl, CX, yL+16f);
+        app.fontPequena.draw(app.batch, lbl, CX, labelY);
         app.dibujarRect(CX, yI, FORM_W, IN_H, Estilos.COLOR_PANEL_INPUT);
         app.dibujarBorde(CX, yI, FORM_W, IN_H, Estilos.GROSOR_BORDE,
             act ? Estilos.COLOR_BORDE_ACTIVO : Estilos.COLOR_BORDE_PANEL);
         String txt = ocultar ? "*".repeat(val.length()) : val;
-        if (act && (System.currentTimeMillis()/500)%2==0) txt+="|";
-        app.fontPequena.setColor(Estilos.COLOR_TEXTO_CLARO);
-        app.fontPequena.draw(app.batch, txt, CX+Estilos.PADDING_INPUT, yI+IN_H/2f+6f);
+        if (act && (System.currentTimeMillis() / 500) % 2 == 0) txt += "|";
+        if (!txt.isEmpty()) {
+            app.fontPequena.setColor(Estilos.COLOR_TEXTO_CLARO);
+            app.fontPequena.draw(app.batch, txt, CX + Estilos.PADDING_INPUT, yI + IN_H / 2f + 6f);
+        }
+    }
+    
+    private void dibujarTogglePass(float inputY) {
+        float mx = Gdx.input.getX(), my = Gdx.graphics.getHeight() - Gdx.input.getY();
+        boolean hover = hit(mx, my, BTN_PASS_X, inputY, BTN_PASS_W, IN_H);
+        app.dibujarRect(BTN_PASS_X, inputY, BTN_PASS_W, IN_H,
+            hover ? Estilos.COLOR_HOVER : Estilos.COLOR_PANEL_INPUT);
+        app.dibujarBorde(BTN_PASS_X, inputY, BTN_PASS_W, IN_H, Estilos.GROSOR_BORDE,
+            mostrarPass ? Estilos.COLOR_BORDE_ACTIVO : Estilos.COLOR_BORDE_PANEL);
+        app.fontPequena.setColor(mostrarPass ? Estilos.COLOR_ACENTO_CYAN : Estilos.COLOR_TEXTO_GRIS);
+        String icono = mostrarPass ? "Aa" : "**";
+        GlyphLayout gl = new GlyphLayout(app.fontPequena, icono);
+        app.fontPequena.draw(app.batch, icono,
+            BTN_PASS_X + (BTN_PASS_W - gl.width) / 2f, inputY + IN_H / 2f + 6f);
     }
     
     private void boton(String txt, float x, float y, boolean prim) {
@@ -192,6 +209,7 @@ public class PantallaRegistro implements Screen {
         if (!requisitos.isEmpty()) { error("La contraseña no cumple los requisitos."); return; }
         try {
             Usuario usr = GestorUsuarios.getInstance().registrar(u, p, n);
+            app.aplicarVolumenUsuario(usr);
             app.cambiarPantalla(new PantallaMenu(app, usr));
         } catch (UsuarioYaExisteException e) { error("El usuario ya está en uso."); }
           catch (ContraseñaInvalidaException e) { error("Contraseña inválida."); }

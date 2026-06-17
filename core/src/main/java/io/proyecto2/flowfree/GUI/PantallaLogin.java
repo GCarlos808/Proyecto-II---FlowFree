@@ -38,6 +38,9 @@ public class PantallaLogin implements Screen {
     private static final float Y_INP_P = 300f;
     private static final float Y_BTN_ENT = 240f;
     private static final float Y_BTN_REG = 180f;
+    private static final float BTN_PASS_W = 36f;
+    private static final float BTN_PASS_X = CX + FORM_W - BTN_PASS_W;
+    private static final float INPUT_W = FORM_W - BTN_PASS_W;
     
     public PantallaLogin(Main app) { this.app = app; }
     
@@ -72,8 +75,8 @@ public class PantallaLogin implements Screen {
     
     private void manejarClic(float x, float y) {
         if (hit(x, y, CX, Y_INP_U, FORM_W, IN_H))  { campoActivo = Campo.USUARIO;    return; }
-        if (hit(x, y, CX, Y_INP_P, FORM_W, IN_H))  { campoActivo = Campo.CONTRASENA; return; }
-        if (hit(x, y, CX + FORM_W - 36f, Y_INP_P, 32f, IN_H)) { mostrarPass = !mostrarPass; return; }
+        if (hit(x, y, BTN_PASS_X, Y_INP_P, BTN_PASS_W, IN_H)) { mostrarPass = !mostrarPass; return; }
+        if (hit(x, y, CX, Y_INP_P, INPUT_W, IN_H))  { campoActivo = Campo.CONTRASENA; return; }
         if (hit(x, y, CX, Y_BTN_ENT, FORM_W, BTN_H)) { intentarLogin(); return; }
         if (hit(x, y, CX, Y_BTN_REG, FORM_W, BTN_H)) { app.cambiarPantalla(new PantallaRegistro(app)); return; }
         campoActivo = Campo.NINGUNO;
@@ -107,10 +110,7 @@ public class PantallaLogin implements Screen {
         
         campo("Usuario",    campoUsuario.toString(),    Y_LBL_U, Y_INP_U, campoActivo == Campo.USUARIO, false);
         campo("Contraseña", campoContrasena.toString(), Y_LBL_P, Y_INP_P, campoActivo == Campo.CONTRASENA, !mostrarPass);
-        
-        app.dibujarRect(CX + FORM_W - 36f, Y_INP_P, 32f, IN_H, Estilos.COLOR_PANEL_INPUT);
-        app.fontPequena.setColor(Estilos.COLOR_TEXTO_GRIS);
-        app.fontPequena.draw(app.batch, mostrarPass ? "O" : "Ø", CX + FORM_W - 28f, Y_INP_P + IN_H / 2f + 6f);
+        dibujarTogglePass(Y_INP_P);
         
         boton("ENTRAR",     CX, Y_BTN_ENT, true);
         boton("REGISTRARSE", CX, Y_BTN_REG, false);
@@ -124,14 +124,31 @@ public class PantallaLogin implements Screen {
     }
     
     private void campo(String lbl, String valor, float yL, float yI, boolean activo, boolean ocultar) {
+        float labelY = yI + IN_H + 12f;
         app.fontPequena.setColor(activo ? Estilos.COLOR_ACENTO_CYAN : Estilos.COLOR_TEXTO_GRIS);
-        app.fontPequena.draw(app.batch, lbl, CX, yL + 16f);
+        app.fontPequena.draw(app.batch, lbl, CX, labelY);
         app.dibujarRect(CX, yI, FORM_W, IN_H, Estilos.COLOR_PANEL_INPUT);
         app.dibujarBorde(CX, yI, FORM_W, IN_H, Estilos.GROSOR_BORDE, activo ? Estilos.COLOR_BORDE_ACTIVO : Estilos.COLOR_BORDE_PANEL);
         String txt = ocultar ? "*".repeat(valor.length()) : valor;
         if (activo && (System.currentTimeMillis() / 500) % 2 == 0) txt += "|";
-        app.fontPequena.setColor(Estilos.COLOR_TEXTO_CLARO);
-        app.fontPequena.draw(app.batch, txt, CX + Estilos.PADDING_INPUT, yI + IN_H / 2f + 6f);
+        if (!txt.isEmpty()) {
+            app.fontPequena.setColor(Estilos.COLOR_TEXTO_CLARO);
+            app.fontPequena.draw(app.batch, txt, CX + Estilos.PADDING_INPUT, yI + IN_H / 2f + 6f);
+        }
+    }
+    
+    private void dibujarTogglePass(float inputY) {
+        float mx = Gdx.input.getX(), my = Gdx.graphics.getHeight() - Gdx.input.getY();
+        boolean hover = hit(mx, my, BTN_PASS_X, inputY, BTN_PASS_W, IN_H);
+        app.dibujarRect(BTN_PASS_X, inputY, BTN_PASS_W, IN_H,
+            hover ? Estilos.COLOR_HOVER : Estilos.COLOR_PANEL_INPUT);
+        app.dibujarBorde(BTN_PASS_X, inputY, BTN_PASS_W, IN_H, Estilos.GROSOR_BORDE,
+            mostrarPass ? Estilos.COLOR_BORDE_ACTIVO : Estilos.COLOR_BORDE_PANEL);
+        app.fontPequena.setColor(mostrarPass ? Estilos.COLOR_ACENTO_CYAN : Estilos.COLOR_TEXTO_GRIS);
+        String icono = mostrarPass ? "Aa" : "**";
+        GlyphLayout gl = new GlyphLayout(app.fontPequena, icono);
+        app.fontPequena.draw(app.batch, icono,
+            BTN_PASS_X + (BTN_PASS_W - gl.width) / 2f, inputY + IN_H / 2f + 6f);
     }
     
     private void boton(String txt, float x, float y, boolean primario) {
@@ -151,6 +168,7 @@ public class PantallaLogin implements Screen {
         if (u.isEmpty() || p.isEmpty()) { error("Completa todos los campos."); return; }
         try {
             Usuario usr = GestorUsuarios.getInstance().iniciarSesion(u, p);
+            app.aplicarVolumenUsuario(usr);
             app.cambiarPantalla(new PantallaMenu(app, usr));
             
         } catch (UsuarioNoEncontradoException e)  { error("Usuario no encontrado."); }

@@ -132,10 +132,17 @@ public class PantallaJuego implements Screen {
         EstadoJuego estado = juego.getEstado();
         if (estado == EstadoJuego.VICTORIA) {
             autosave.guardarAhora();
-            if (juego.getNivelActual() >= Constantes.NIVEL_MAX) {
+            int completado = juego.getUltimoNivelCompletado();
+            if (completado >= Constantes.NIVEL_MAX) {
                 app.cambiarPantalla(new PantallaVictoria(app, juego.getUsuarioActivo()));
+            } else {
+                app.cambiarPantalla(new PantallaNivelCompletado(
+                    app,
+                    juego.getUsuarioActivo(),
+                    completado,
+                    juego.getPuntosUltimoNivel(),
+                    juego.getPasos()));
             }
-            
         } else if (estado == EstadoJuego.DERROTA) {
             app.cambiarPantalla(new PantallaMenu(app, juego.getUsuarioActivo()));
         }
@@ -202,7 +209,7 @@ public class PantallaJuego implements Screen {
         GlyphLayout gt = new GlyphLayout(app.fontGrande, tiempoStr);
         app.fontGrande.draw(app.batch, tiempoStr, (800f - gt.width) / 2f, 592f);
         
-        String vidas = "♥".repeat(Math.max(0, juego.getVidas()));
+        String vidas = "X".repeat(Math.max(0, juego.getVidas()));
         app.fontMediana.setColor(Estilos.COLOR_ACENTO_ROJO);
         GlyphLayout gv = new GlyphLayout(app.fontMediana, vidas);
         app.fontMediana.draw(app.batch, vidas, 800f - gv.width - 20f, 584f);
@@ -211,6 +218,24 @@ public class PantallaJuego implements Screen {
         
         app.fontPequena.setColor(Estilos.COLOR_TEXTO_GRIS);
         app.fontPequena.draw(app.batch, "PASOS: " + juego.getPasos(), 20f, 24f);
+
+        int ocupadas = juego.contarCeldasOcupadas();
+        int total = juego.getTotalCeldas();
+        app.fontPequena.setColor(
+            ocupadas == total ? Estilos.COLOR_ACENTO_VERDE : Estilos.COLOR_TEXTO_GRIS);
+        app.fontPequena.draw(app.batch, "CELDA: " + ocupadas + "/" + total, 130f, 24f);
+
+        if (juego.flujosConectados() && ocupadas < total) {
+            app.fontPequena.setColor(Estilos.COLOR_ACENTO_AMARILLO);
+            GlyphLayout gh = new GlyphLayout(app.fontPequena, "Llena toda la cuadricula");
+            app.fontPequena.draw(app.batch, "Llena toda la cuadricula",
+                (800f - gh.width) / 2f, 55f);
+        } else if (ocupadas == total && !juego.esCompleto()) {
+            app.fontPequena.setColor(Estilos.COLOR_ACENTO_AMARILLO);
+            GlyphLayout gh = new GlyphLayout(app.fontPequena, "Conecta cada par de puntos del mismo color");
+            app.fontPequena.draw(app.batch, "Conecta cada par de puntos del mismo color",
+                (800f - gh.width) / 2f, 55f);
+        }
         
         app.fontPequena.setColor(Estilos.COLOR_ACENTO_ROJO);
         app.fontPequena.draw(app.batch, "FALLOS: " + juego.getFallos(), 200f, 24f);

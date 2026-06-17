@@ -14,6 +14,8 @@ public abstract class Juego implements Juegable, Guardable {
     protected int fallos;
     protected long tiempoInicioNivel;
     protected int tiempoLimiteSegundos;
+    protected int ultimoNivelCompletado;
+    protected int puntosUltimoNivel;
 
     protected Usuario usuarioActivo;
     protected TimerNivel timer;
@@ -94,6 +96,8 @@ public abstract class Juego implements Juegable, Guardable {
         int puntosNivel = calcularPuntuacion();
         long tiempoMs = tiempoTranscurrido();
         puntuacion += puntosNivel;
+        ultimoNivelCompletado = nivelActual;
+        puntosUltimoNivel = puntosNivel;
 
         usuarioActivo.getEstadisticas().registrarNivelCompletado(
             nivelActual, tiempoMs, puntosNivel);
@@ -101,17 +105,12 @@ public abstract class Juego implements Juegable, Guardable {
         usuarioActivo.setPuntuacion(puntuacion);
         usuarioActivo.setVidasRestantes(vidas);
 
-        if (esUltimoNivel()) {
-            estado = EstadoJuego.VICTORIA;
-        } else {
+        if (!esUltimoNivel()) {
             int siguiente = nivelActual + 1;
             usuarioActivo.setNivelActual(Math.max(usuarioActivo.getNivelActual(), siguiente));
-            nivelActual = siguiente;
-            estado = EstadoJuego.JUGANDO;
-            tiempoInicioNivel = System.currentTimeMillis();
-            iniciarNivel(nivelActual);
-            iniciarTimer();
         }
+
+        estado = EstadoJuego.VICTORIA;
     }
 
     private boolean esUltimoNivel() {
@@ -164,4 +163,6 @@ public abstract class Juego implements Juegable, Guardable {
     public int getVidas() { return vidas; }
     public int getPuntuacion() { return puntuacion; }
     public int getFallos() { return fallos; }
+    public int getUltimoNivelCompletado() { return ultimoNivelCompletado; }
+    public int getPuntosUltimoNivel() { return puntosUltimoNivel; }
 }

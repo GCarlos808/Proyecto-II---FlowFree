@@ -5,11 +5,13 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.Texture;
 
 import io.proyecto2.flowfree.Main;
 import io.proyecto2.flowfree.constantes.Estilos;
 import io.proyecto2.flowfree.datos.GestorUsuarios;
 import io.proyecto2.flowfree.usuario.Usuario;
+import io.proyecto2.flowfree.util.GestorAvatares;
 
 public class PantallaMenu implements Screen {
 
@@ -19,10 +21,11 @@ public class PantallaMenu implements Screen {
     private static final float BTN_W = 300f;
     private static final float BTN_H = Estilos.ALTO_BOTON;
     private static final float BTN_X = (800f - BTN_W) / 2f;
-    private static final float Y_JUGAR = 310f;
-    private static final float Y_PERFIL = 248f;
-    private static final float Y_RANKING = 186f;
-    private static final float Y_SALIR = 110f;
+    private static final float Y_JUGAR = 340f;
+    private static final float Y_PERFIL = 282f;
+    private static final float Y_AMIGOS = 224f;
+    private static final float Y_RANKING = 166f;
+    private static final float Y_SALIR = 98f;
     
     
     public PantallaMenu(Main app, Usuario usuario) {
@@ -43,6 +46,7 @@ public class PantallaMenu implements Screen {
     private void manejarClic(float x, float y) {
         if (hit(x,y,BTN_X,Y_JUGAR,  BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaMapa(app,usuario)); return; }
         if (hit(x,y,BTN_X,Y_PERFIL, BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaPerfil(app,usuario)); return; }
+        if (hit(x,y,BTN_X,Y_AMIGOS, BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaAmigos(app,usuario)); return; }
         if (hit(x,y,BTN_X,Y_RANKING,BTN_W,BTN_H)) { app.cambiarPantalla(new PantallaRanking(app,usuario)); return; }
         if (hit(x,y,BTN_X,Y_SALIR,  BTN_W,BTN_H)) {
             GestorUsuarios.getInstance().cerrarSesion();
@@ -70,13 +74,17 @@ public class PantallaMenu implements Screen {
         float px = (800f-500f)/2f;
         app.dibujarRect(px, 388f, 500f, 68f, Estilos.COLOR_PANEL_CARD);
         app.dibujarBorde(px, 388f, 500f, 68f, 1f, Estilos.COLOR_BORDE_PANEL);
-        stat(px+20f,  430f, "NIVEL",    String.valueOf(usuario.getNivelActual()));
-        stat(px+130f, 430f, "PUNTOS",   String.valueOf(usuario.getPuntuacion()));
-        stat(px+280f, 430f, "VIDAS",    String.valueOf(usuario.getVidasRestantes()));
-        stat(px+380f, 430f, "PARTIDAS", String.valueOf(usuario.getEstadisticas().getPartidasJugadas()));
+
+        Texture avatar = GestorAvatares.obtener(usuario.getRutaAvatar());
+        app.batch.draw(avatar, px + 8f, 392f, 60f, 60f);
+        stat(px+88f,  430f, "NIVEL",    String.valueOf(usuario.getNivelActual()));
+        stat(px+190f, 430f, "PUNTOS",   String.valueOf(usuario.getPuntuacion()));
+        stat(px+320f, 430f, "VIDAS",    String.valueOf(usuario.getVidasRestantes()));
+        stat(px+420f, 430f, "PARTIDAS", String.valueOf(usuario.getEstadisticas().getPartidasJugadas()));
         
         boton("JUGAR", BTN_X, Y_JUGAR,   true);
         boton("PERFIL", BTN_X, Y_PERFIL,  false);
+        boton("AMIGOS", BTN_X, Y_AMIGOS,  false);
         boton("RANKING", BTN_X, Y_RANKING, false);
         boton("CERRAR SESIÓN", BTN_X, Y_SALIR,   false);
         

@@ -36,7 +36,7 @@ public class Usuario implements Guardable, Serializable {
         this.preferencias = new Preferencias();
         this.estadisticas = new Estadisticas();
         this.amigos = new ListaAmigos();
-        this.rutaAvatar = "avatars/default.png";
+        this.rutaAvatar = "default";
     }
 
     /** Constructor interno para cargar desde archivo binario. */
